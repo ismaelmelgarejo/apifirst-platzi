@@ -11,7 +11,7 @@ const swaggerDocument = YAML.load("./openapi.yaml");
 const users = new Map();
 
 // In-memory storage for products
-const products = new Map();
+const products = [];
 
 app.use("/docs", swaggerUi.serve, swaggerUi.setup(swaggerDocument));
 app.use(express.json());
@@ -91,8 +91,7 @@ app.post("/user/:id", (req, res) => {
 
 // GET /products - Get all products
 app.get("/products", (req, res) => {
-    const productsList = Array.from(products.values());
-    res.status(200).json(productsList);
+    res.status(200).json(products);
 });
 
 // POST /products - Create a new product
@@ -103,14 +102,14 @@ app.post("/products", (req, res) => {
         ...productData
     };
     
-    products.set(newProduct.id, newProduct);
+    products.push(newProduct);
     res.status(201).json(newProduct);
 });
 
 // GET /products/{id} - Get a product by ID
 app.get("/products/:id", (req, res) => {
     const { id } = req.params;
-    const product = products.get(id);
+    const product = products.find(p => p.id === id);
     
     if (!product) {
         return res.status(404).json({ message: "Product not found" });
@@ -124,19 +123,19 @@ app.put("/products/:id", (req, res) => {
     const { id } = req.params;
     const productData = req.body;
     
-    const existingProduct = products.get(id);
+    const productIndex = products.findIndex(p => p.id === id);
     
-    if (!existingProduct) {
+    if (productIndex === -1) {
         return res.status(404).json({ message: "Product not found" });
     }
     
     const updatedProduct = {
-        ...existingProduct,
+        ...products[productIndex],
         ...productData,
         id // Ensure ID doesn't get overwritten
     };
     
-    products.set(id, updatedProduct);
+    products[productIndex] = updatedProduct;
     res.status(200).json(updatedProduct);
 });
 
@@ -144,13 +143,13 @@ app.put("/products/:id", (req, res) => {
 app.delete("/products/:id", (req, res) => {
     const { id } = req.params;
     
-    const product = products.get(id);
+    const productIndex = products.findIndex(p => p.id === id);
     
-    if (!product) {
+    if (productIndex === -1) {
         return res.status(404).json({ message: "Product not found" });
     }
     
-    products.delete(id);
+    products.splice(productIndex, 1);
     res.status(204).send();
 });
 
